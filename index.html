@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Odisea Cósmica - Multiplayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tipografías Sci-Fi */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #03030a;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overscroll-behavior-y: contain;
+        }
+
+        h1, h2, h3, .hud-text {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Vidrio Biselado / Beveled Glass Mejorado */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(20, 25, 50, 0.6) 0%, rgba(5, 10, 25, 0.8) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            border-left: 1px solid rgba(0, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+            border-right: 1px solid rgba(0, 0, 0, 0.4);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.8),
+                inset 1px 1px 3px rgba(0, 255, 255, 0.2),
+                inset -3px -3px 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            position: relative;
+            border-radius: 1.25rem;
+        }
+
+        .hud-input {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            color: #0ff;
+            transition: all 0.3s;
+        }
+        .hud-input:focus {
+            outline: none;
+            border-color: #0ff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+        }
+
+        .btn-launch {
+            background: linear-gradient(90deg, rgba(0,255,255,0.1), rgba(0,150,255,0.1));
+            border: 1px solid #0ff;
+            box-shadow: 0 0 15px rgba(0,255,255,0.15);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .btn-launch:hover {
+            background: linear-gradient(90deg, rgba(0,255,255,0.25), rgba(0,150,255,0.25));
+            box-shadow: 0 0 25px rgba(0,255,255,0.5), inset 0 0 10px rgba(0,255,255,0.3);
+            transform: scale(1.02);
+            text-shadow: 0 0 8px #fff;
+        }
+        
+        .btn-host {
+            background: linear-gradient(90deg, rgba(255,0,255,0.1), rgba(150,0,255,0.1));
+            border: 1px solid #f0f;
+            box-shadow: 0 0 15px rgba(255,0,255,0.15);
+            color: #f0f;
+        }
+        .btn-host:hover {
+            background: linear-gradient(90deg, rgba(255,0,255,0.25), rgba(150,0,255,0.25));
+            box-shadow: 0 0 25px rgba(255,0,255,0.5);
+            color: white;
+        }
+
+        .opt-cyan { --neon: #00ffff; }
+        .opt-magenta { --neon: #ff00ff; }
+        .opt-yellow { --neon: #ffd700; }
+        .opt-green { --neon: #00fa9a; }
+
+        .btn-option {
+            background: linear-gradient(135deg, rgba(20, 25, 40, 0.7) 0%, rgba(5, 10, 20, 0.9) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-right: 1px solid rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(0,0,0,0.6);
+            border-left: 4px solid var(--neon);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.6),
+                inset 1px 1px 3px rgba(255, 255, 255, 0.15),
+                inset -2px -2px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.75rem;
+        }
+        .btn-option:active:not(:disabled) { transform: scale(0.96); }
+        .btn-option:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 10px #0ff); }
+            50% { opacity: 0.6; filter: drop-shadow(0 0 4px #0ff); }
+        }
+        .animate-hud { animation: pulse-glow 3s infinite; }
+        
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.95); filter: blur(6px); }
+            100% { opacity: 1; transform: scale(1); filter: blur(0px); }
+        }
+        .view-active { animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes shipVibrate {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(1px, -1px) rotate(-0.5deg); }
+            50% { transform: translate(-2px, 2px) rotate(0.5deg); }
+            75% { transform: translate(1px, 1px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .animate-ship { animation: shipVibrate 0.1s infinite; }
+        
+        .engine-flame {
+            position: absolute;
+            bottom: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20%;
+            height: 35%;
+            background: radial-gradient(ellipse at top, rgba(0,255,255,0.9) 0%, rgba(255,0,255,0.4) 40%, rgba(0,0,0,0) 80%);
+            filter: blur(6px);
+            animation: flicker 0.1s infinite;
+            z-index: -1;
+        }
+        @keyframes flicker {
+            0% { opacity: 0.8; transform: translateX(-50%) scaleY(1); }
+            50% { opacity: 1; transform: translateX(-50%) scaleY(1.4); }
+            100% { opacity: 0.8; transform: translateX(-50%) scaleY(1); }
+        }
+
+        @keyframes redAlert {
+            0% { box-shadow: inset 0 0 0px rgba(255,0,50,0); }
+            50% { box-shadow: inset 0 0 100px rgba(255,0,50,0.6); }
+            100% { box-shadow: inset 0 0 0px rgba(255,0,50,0); }
+        }
+        .alert-mode { animation: redAlert 1s infinite; pointer-events: none; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.3); border-radius: 10px; }
+    </style>
+</head>
+<body class="fixed inset-0 w-full h-full flex flex-col items-center justify-center bg-[#03030a] overflow-hidden">
+
+    <div id="red-alert-overlay" class="absolute inset-0 w-full h-full z-50 hidden"></div>
+    <canvas id="starfield" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+    <div class="absolute inset-0 z-10 w-full h-full flex items-center justify-center p-3 md:p-6 overflow-hidden">
+
+        <!-- VISTA 0: CARGA -->
+        <div id="view-loading" class="flex flex-col items-center justify-center w-full max-w-md h-full min-h-0 view-active">
+            <div class="glass-panel p-6 w-full text-center">
+                <h1 class="hud-text text-cyan-300 text-2xl md:text-3xl animate-pulse flex flex-col items-center justify-center gap-3">
+                    <span id="loading-icon" class="w-8 h-8"></span> <span>Iniciando Misión...</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- VISTA 1: LOGIN -->
+        <div id="view-login" class="hidden flex flex-col items-center justify-center w-full max-w-md h-full min-h-0 relative">
+            <div class="glass-panel p-6 md:p-8 w-full text-center flex flex-col justify-center">
+                <h1 class="font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-2 animate-hud tracking-widest uppercase text-4xl md:text-6xl leading-none">Odisea</h1>
+                <h2 class="text-cyan-200 mb-8 tracking-[0.3em] text-xl md:text-2xl leading-none">Cósmica</h2>
+                
+                <div id="role-selection" class="flex flex-col gap-4">
+                    <button onclick="showAdminSetup()" class="btn-launch btn-host font-bold py-4 rounded-lg text-sm md:text-base flex items-center justify-center gap-2">
+                        <span id="icon-crown-btn" class="w-5 h-5"></span> Crear Misión (Comandante)
+                    </button>
+                    <button onclick="showPlayerSetup()" class="btn-launch font-bold py-4 rounded-lg text-cyan-100 text-sm md:text-base flex items-center justify-center gap-2">
+                        <span id="icon-rocket-btn" class="w-5 h-5"></span> Unirse a Misión (Piloto)
+                    </button>
+                </div>
+
+                <div id="player-setup" class="hidden flex-col gap-4">
+                    <p class="text-cyan-400 text-xs uppercase tracking-widest text-left flex items-center gap-2">
+                        <span id="icon-user-setup" class="w-4 h-4"></span> Frecuencia de Ingreso
+                    </p>
+                    <input type="text" id="pin-input" placeholder="PIN de 4 dígitos" maxlength="4" class="hud-input w-full text-center text-2xl p-3 rounded font-bold tracking-widest">
+                    <input type="text" id="name-input" placeholder="Nombre de Piloto" class="hud-input w-full text-center text-xl p-3 rounded font-bold">
+                    
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="resetLogin()" class="btn-launch w-1/3 text-gray-400 py-3 rounded-lg text-xs">Volver</button>
+                        <button onclick="joinGame()" class="btn-launch w-2/3 text-cyan-100 font-bold py-3 rounded-lg text-sm uppercase">Iniciar Sesión</button>
+                    </div>
+                    <p id="login-error" class="text-red-400 text-xs font-bold hidden">Acceso Denegado.</p>
+                </div>
+            </div>
+            <p class="absolute bottom-4 left-0 right-0 text-center text-[10px] text-gray-500 uppercase tracking-widest">
+                ID de Red: <span id="network-id-display" class="text-cyan-500">...</span>
+            </p>
+        </div>
+
+        <!-- VISTA 2: LOBBY -->
+        <div id="view-lobby" class="hidden flex-col items-center w-full max-w-4xl h-full py-6 min-h-0">
+            <div class="glass-panel w-full p-4 md:p-8 flex flex-col items-center flex-1 min-h-0">
+                <div class="flex justify-between w-full mb-4 border-b border-cyan-500/30 pb-4">
+                    <div class="text-left">
+                        <p class="text-cyan-500 text-[10px] md:text-xs uppercase tracking-widest">Frecuencia (PIN)</p>
+                        <p id="lobby-pin-display" class="hud-text text-2xl md:text-3xl text-cyan-200 tracking-wider">0000</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-purple-500 text-[10px] md:text-xs uppercase tracking-widest">Tripulación</p>
+                        <p id="lobby-count" class="hud-text text-2xl md:text-3xl text-purple-200">0</p>
+                    </div>
+                </div>
+                <div class="flex-1 w-full overflow-y-auto mb-4 flex flex-wrap content-start justify-center gap-2 md:gap-3 p-3 border border-white/5 rounded-xl bg-black/40 shadow-inner" id="lobby-players"></div>
+                <div id="host-controls" class="hidden w-full shrink-0 flex-col items-center">
+                    <button onclick="hostStartGame()" class="btn-launch btn-host w-full font-bold py-4 rounded-lg flex justify-center items-center gap-3 text-sm md:text-lg">
+                        AUTORIZAR DESPEGUE <span id="icon-rocket-lobby" class="w-5 h-5 md:w-6 md:h-6"></span>
+                    </button>
+                    <!-- BOTÓN SIMULADOR -->
+                    <button onclick="addTestBot()" class="mt-4 text-cyan-400 text-[10px] md:text-xs uppercase tracking-widest border border-cyan-400/30 rounded px-4 py-2 hover:bg-cyan-900/30 transition-colors">
+                        + Añadir Piloto de Prueba (Bot)
+                    </button>
+                </div>
+                <div id="player-waiting" class="hidden w-full text-center shrink-0">
+                    <p class="text-cyan-300 animate-pulse text-sm md:text-lg tracking-widest uppercase flex items-center justify-center gap-2">
+                        <span id="icon-radar-waiting" class="w-5 h-5 animate-spin"></span> Esperando orden del comandante...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 3: VIAJE -->
+        <div id="view-travel" class="hidden flex-col items-center justify-center w-full h-full min-h-0 pointer-events-none z-20 px-4">
+            <div class="glass-panel p-6 md:p-10 flex flex-col items-center text-center w-full max-w-2xl bg-black/80 shadow-[0_0_50px_rgba(0,255,255,0.2)] border-cyan-500/30 transition-all duration-700 relative overflow-hidden">
+                <!-- Efecto de escaneo holográfico de fondo -->
+                <div class="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent via-cyan-500/10 to-transparent opacity-50 animate-[translateY_2s_linear_infinite]" style="animation: scan 3s linear infinite;"></div>
+                
+                <h1 class="hud-text tracking-wider text-2xl md:text-4xl lg:text-5xl leading-none text-cyan-300 animate-pulse drop-shadow-[0_0_15px_rgba(0,255,255,0.8)] uppercase transition-all duration-500 relative z-10">Salto Hiperespacial</h1>
+                
+                <div class="w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent my-5 opacity-70 relative z-10"></div>
+                
+                <div class="relative z-10 flex flex-col items-center justify-center min-h-[80px]">
+                    <p class="text-purple-400 uppercase tracking-[0.3em] text-[10px] md:text-xs mb-3 transition-all duration-500">Aproximación a coordenadas:</p>
+                    <p id="travel-target-name" class="text-white font-bold uppercase tracking-widest text-2xl md:text-4xl drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] leading-tight flex items-center justify-center gap-3 transition-all duration-500"></p>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes scan {
+                    0% { transform: translateY(-100%); }
+                    100% { transform: translateY(100%); }
+                }
+            </style>
+        </div>
+
+        <!-- VISTA 4: PREGUNTA (SPLIT VIEW) -->
+        <div id="view-question" class="hidden flex-col w-full h-full py-2 md:py-4 min-h-0">
+            <div class="flex justify-between items-center mb-2 md:mb-4 border-b border-cyan-500/30 pb-2 px-3 md:px-4 shrink-0 glass-panel !bg-black/20">
+                <div class="flex items-center gap-3 md:gap-6">
+                    <div class="relative w-12 h-12 md:w-16 md:h-16 flex items-center justify-center shrink-0">
+                        <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="40%" stroke="rgba(0,255,255,0.1)" stroke-width="4" fill="none" />
+                            <circle id="timer-circle" cx="50%" cy="50%" r="40%" stroke="#0ff" stroke-width="4" fill="none" stroke-dasharray="100" stroke-dashoffset="0" style="transition: stroke-dashoffset 1s linear; stroke-linecap: round;" />
+                        </svg>
+                        <span id="timer-display" class="hud-text text-lg md:text-2xl text-cyan-100 font-bold">20</span>
+                    </div>
+                    <div>
+                        <p class="text-[9px] md:text-[10px] text-cyan-500 uppercase tracking-widest leading-none mb-1">Localización</p>
+                        <p id="current-location" class="text-xs md:text-sm text-cyan-200 font-bold leading-none"></p>
+                    </div>
+                </div>
+
+                <div id="crew-stats-header" class="flex gap-4 md:gap-6 items-center shrink-0">
+                    <div class="text-center hidden sm:block">
+                        <p class="text-[9px] text-cyan-400 uppercase tracking-widest leading-none mb-1">Respondieron</p>
+                        <p id="stat-answered" class="text-base md:text-lg font-bold text-white leading-none">0</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[9px] text-purple-400 uppercase tracking-widest leading-none mb-1">Faltan</p>
+                        <p id="stat-missing" class="text-base md:text-lg font-bold text-white leading-none">0</p>
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <p class="text-[9px] text-purple-500 uppercase tracking-widest leading-none mb-1">Misión</p>
+                        <p class="text-xs md:text-sm text-purple-200 font-bold leading-none"><span id="q-number">1 / 13</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="question-main-container" class="flex flex-col md:flex-row flex-1 gap-3 md:gap-4 min-h-0 overflow-hidden">
+                <div id="question-content" class="flex flex-col flex-[3] min-h-0 gap-3 md:gap-4">
+                    <div class="glass-panel w-full p-3 md:p-6 flex-1 flex flex-col justify-center items-center text-center relative min-h-0 overflow-y-auto custom-scrollbar">
+                        <p class="text-[10px] md:text-xs text-cyan-400 uppercase tracking-[0.3em] mb-2 shrink-0">Procesando Datos</p>
+                        <h2 id="question-text" class="font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] leading-snug text-base sm:text-lg md:text-[clamp(1.2rem,3vh,2rem)] w-full break-words my-auto"></h2>
+                        <div id="wait-overlay" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md flex-col items-center justify-center z-20 rounded-2xl">
+                            <span id="icon-check-overlay" class="w-10 h-10 md:w-12 md:h-12 text-cyan-400 mb-2"></span>
+                            <p class="text-cyan-300 text-sm md:text-xl tracking-[0.2em] md:tracking-[0.3em] uppercase">Transmisión Enviada</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 shrink-0" id="answers-container">
+                        <button id="btn-ans-0" onclick="submitAnswer(0)" class="btn-option opt-cyan flex items-center p-3 md:p-4 group min-h-[60px]">
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border border-cyan-400 flex shrink-0 items-center justify-center mr-3 md:mr-4 text-sm md:text-lg font-bold bg-cyan-900/30">A</div>
+                            <span class="text-left font-semibold text-gray-200 text-sm md:text-base leading-tight break-words w-full" id="ans-0"></span>
+                        </button>
+                        <button id="btn-ans-1" onclick="submitAnswer(1)" class="btn-option opt-magenta flex items-center p-3 md:p-4 group min-h-[60px]">
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border border-fuchsia-500 flex shrink-0 items-center justify-center mr-3 md:mr-4 text-sm md:text-lg font-bold bg-fuchsia-900/30">B</div>
+                            <span class="text-left font-semibold text-gray-200 text-sm md:text-base leading-tight break-words w-full" id="ans-1"></span>
+                        </button>
+                        <button id="btn-ans-2" onclick="submitAnswer(2)" class="btn-option opt-yellow flex items-center p-3 md:p-4 group min-h-[60px]">
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border border-yellow-400 flex shrink-0 items-center justify-center mr-3 md:mr-4 text-sm md:text-lg font-bold bg-yellow-900/30">C</div>
+                            <span class="text-left font-semibold text-gray-200 text-sm md:text-base leading-tight break-words w-full" id="ans-2"></span>
+                        </button>
+                        <button id="btn-ans-3" onclick="submitAnswer(3)" class="btn-option opt-green flex items-center p-3 md:p-4 group min-h-[60px]">
+                            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border border-emerald-400 flex shrink-0 items-center justify-center mr-3 md:mr-4 text-sm md:text-lg font-bold bg-emerald-900/30">D</div>
+                            <span class="text-left font-semibold text-gray-200 text-sm md:text-base leading-tight break-words w-full" id="ans-3"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="host-q-sidebar" class="hidden flex-col flex-1 glass-panel p-4 min-h-0 border-cyan-500/20 bg-black/40">
+                    <p class="text-cyan-400 text-xs md:text-sm uppercase tracking-[0.2em] mb-3 pb-2 border-b border-white/10 flex items-center gap-2 shrink-0">
+                        <span id="icon-sidebar-radar" class="w-4 h-4"></span> Estado Tripulación
+                    </p>
+                    <div id="host-answered-list" class="flex-1 overflow-y-auto flex flex-col gap-2 custom-scrollbar"></div>
+                    <button onclick="hostForceEndQuestion()" class="btn-launch btn-host w-full py-3 mt-4 rounded-lg font-bold text-xs tracking-widest uppercase shrink-0">Cerrar Escaneo</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 5: FEEDBACK -->
+        <div id="view-feedback" class="hidden flex-col items-center justify-center w-full max-w-2xl text-center h-full min-h-0">
+            <div class="glass-panel w-full p-6 md:p-10 flex flex-col justify-center items-center min-h-0" id="feedback-panel">
+                <div id="feedback-icon" class="mb-4 w-16 h-16 md:w-24 md:h-24 drop-shadow-[0_0_20px_currentColor] shrink-0"></div>
+                <h1 id="feedback-title" class="hud-text mb-2 tracking-wider text-2xl md:text-4xl leading-none text-white uppercase shrink-0">Análisis Finalizado</h1>
+                
+                <div id="feedback-player" class="w-full flex flex-col items-center min-h-0">
+                    <p class="opacity-80 uppercase tracking-widest text-xs md:text-sm mb-4">La respuesta era: <span id="correct-ans-display" class="font-bold text-yellow-300 uppercase"></span></p>
+                    <div class="bg-black/60 px-6 py-4 rounded-xl border border-white/10 shrink-0 shadow-inner w-full max-w-sm">
+                        <p class="text-[10px] md:text-xs text-cyan-400 uppercase tracking-widest mb-1">Créditos de Exploración</p>
+                        <p id="feedback-points" class="hud-text text-white text-4xl md:text-6xl leading-none">+850</p>
+                    </div>
+                    <p class="mt-4 opacity-80 text-xs md:text-sm uppercase tracking-widest">Balance Total: <span id="total-score-display" class="font-bold text-cyan-300 text-base md:text-lg">0</span> CR</p>
+                </div>
+
+                <div id="feedback-host" class="hidden w-full flex-col items-center mt-6 shrink-0">
+                    <p class="opacity-80 uppercase tracking-widest text-[10px] md:text-xs mb-1">Solución de Misión:</p>
+                    <p id="host-correct-ans-display" class="font-bold text-yellow-300 text-lg md:text-2xl mb-6 drop-shadow-md px-4"></p>
+                    <button onclick="hostNextAction()" id="btn-next-host" class="btn-launch btn-host w-full max-w-sm font-bold py-3 md:py-4 rounded-lg text-sm md:text-base flex items-center justify-center gap-2 uppercase"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 6: PODIO -->
+        <div id="view-podium" class="hidden flex-col items-center justify-center w-full h-full max-w-5xl py-4 min-h-0">
+            <div class="glass-panel w-full h-full p-4 md:p-8 flex flex-col items-center relative overflow-hidden min-h-0">
+                <h1 class="hud-text text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 mb-2 drop-shadow-[0_0_10px_rgba(250,204,21,0.3)] text-center uppercase shrink-0 text-3xl md:text-5xl leading-none">Rango Galáctico</h1>
+                <div class="flex items-end justify-center w-full flex-shrink-0 gap-2 md:gap-6 z-10 min-h-0 h-[35%]" id="podium-container"></div>
+                <div id="full-ranking-list" class="w-full max-w-md mt-6 bg-black/50 border border-cyan-500/20 rounded-xl p-4 overflow-y-auto flex-1 z-10 flex flex-col gap-2 shadow-inner custom-scrollbar"></div>
+                <button onclick="location.reload()" class="mt-4 z-10 btn-launch px-6 py-3 rounded-lg text-cyan-100 font-bold text-xs md:text-sm shrink-0 uppercase tracking-widest">Desconectar Sistemas</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const apiKey = ""; 
+
+        const svgIcons = {
+            rocket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M12 2C8 6 7 11 7 15v3l-3 3v1h12v-1l-3-3v-3c0-4-1-9-5-13Z"/><path d="M9 15h6"/><path d="M12 18v4"/></svg>`,
+            crown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M2 20h20"/><path d="M3 16l-1-9 5 3 5-8 5 8 5-3-1 9Z"/></svg>`,
+            star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+            planet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="8"/><path d="M12 4a9.9 9.9 0 0 1 4.5 8 9.9 9.9 0 0 1-4.5 8"/><path d="M12 4a9.9 9.9 0 0 0-4.5 8 9.9 9.9 0 0 0 4.5 8"/></svg>`,
+            moon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+            asteroid: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M15.5 3c2 .5 4.5 2.5 5.5 5 .5 1.5.5 4-.5 5.5-1.5 2.5-4 4.5-6.5 5.5-2 1-5 1-7-.5-2.5-1.5-4-4.5-3.5-7.5.5-2 2-4.5 4-5.5 2-1 5.5-1.5 8-2z"/><circle cx="9" cy="11" r="1.5"/><circle cx="15" cy="14" r="1"/></svg>`,
+            check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+            radar: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="10"/><path d="M12 12 6.5 6.5"/></svg>`,
+            user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+        };
+
+        document.getElementById('loading-icon').innerHTML = svgIcons.radar;
+        document.getElementById('icon-crown-btn').innerHTML = svgIcons.crown;
+        document.getElementById('icon-rocket-btn').innerHTML = svgIcons.rocket;
+        document.getElementById('icon-user-setup').innerHTML = svgIcons.user;
+        document.getElementById('icon-rocket-lobby').innerHTML = svgIcons.rocket;
+        document.getElementById('icon-radar-waiting').innerHTML = svgIcons.radar;
+        document.getElementById('icon-check-overlay').innerHTML = svgIcons.check;
+        document.getElementById('icon-sidebar-radar').innerHTML = svgIcons.radar;
+
+        // --- UNIFIED AUDIO SYSTEM ---
+        let audioCtx;
+        let audioUnlocked = false;
+        let globalAudio = new Audio(); // Único reproductor para evitar bloqueos en celulares
+
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                globalAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                globalAudio.play().then(() => {
+                    globalAudio.pause();
+                    audioUnlocked = true;
+                }).catch(e => console.warn("Audio Unlock failed", e));
+
+                // Desbloqueo del motor nativo por si la IA falla
+                let msg = new SpeechSynthesisUtterance('');
+                window.speechSynthesis.speak(msg);
+            } catch(e) { console.error("Audio Context Init error", e); }
+        }
+
+        function playAlertBeep() {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } catch(e) {}
+        }
+
+        // --- EFECTO DE MOTOR HIPERESPACIAL ---
+        let warpOsc = null;
+        let warpGain = null;
+
+        function startWarpSound() {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                warpOsc = audioCtx.createOscillator();
+                warpGain = audioCtx.createGain();
+                
+                warpOsc.type = 'sawtooth';
+                warpOsc.frequency.setValueAtTime(40, audioCtx.currentTime); 
+                warpOsc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 2.5); 
+                
+                warpGain.gain.setValueAtTime(0, audioCtx.currentTime);
+                warpGain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 1); 
+                
+                warpOsc.connect(warpGain);
+                warpGain.connect(audioCtx.destination);
+                
+                warpOsc.start();
+            } catch(e) {}
+        }
+
+        function stopWarpSound() {
+            if (warpOsc && warpGain && audioCtx) {
+                try {
+                    warpOsc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+                    warpGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                    warpOsc.stop(audioCtx.currentTime + 0.5);
+                } catch(e) {}
+                warpOsc = null;
+                warpGain = null;
+            }
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const buffer = new ArrayBuffer(44 + pcmData.length);
+            const view = new DataView(buffer);
+            const writeString = (offset, string) => { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); };
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + pcmData.length, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); 
+            view.setUint16(22, 1, true); 
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, pcmData.length, true);
+            for (let i = 0; i < pcmData.length; i++) view.setUint8(44 + i, pcmData[i]);
+            return buffer;
+        }
+
+        function stopReading() {
+            globalAudio.pause();
+            globalAudio.currentTime = 0;
+            window.speechSynthesis.cancel();
+        }
+
+        async function preloadSpeak(text) {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: `Di de forma clara el siguiente texto: ${text}` }] }],
+                generationConfig: { 
+                    responseModalities: ["AUDIO"], 
+                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } 
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+            
+            let retries = 0;
+            const delays = [1000, 2000, 4000];
+            
+            while (retries < 3) {
+                try {
+                    const response = await fetch(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error("API Error / No Key");
+                    const result = await response.json();
+                    const audioData = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData;
+                    if (!audioData) throw new Error("Audio fail");
+                    
+                    const pcm = Uint8Array.from(atob(audioData.data), c => c.charCodeAt(0));
+                    const rate = parseInt(audioData.mimeType.match(/rate=(\d+)/)?.[1] || "24000");
+                    const wav = pcmToWav(pcm, rate);
+                    const url = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
+                    return { url, text };
+                } catch (e) {
+                    await new Promise(r => setTimeout(r, delays[retries]));
+                    retries++;
+                }
+            }
+            
+            // Si la IA falla (ej. sin API key al usarlo localmente), usamos la voz nativa
+            console.warn("Gemini TTS no disponible, usando voz nativa del dispositivo.");
+            return { url: null, text };
+        }
+
+        const questions = [
+            // 1. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Alfa", icon: "star", style: "sun", q: "¿Cómo se llama el segmento de recta que une el centro del círculo con cualquier punto de su borde?", options: ["Radio", "Diámetro", "Cuerda", "Arco"], correct: 0, time: 20 },
+            // 2. INGLÉS (Planetas)
+            { lang: "en-US", name: "Solar System", icon: "planet", style: "earth", q: "How many planets are in the Solar System?", options: ["7", "8", "9", "10"], correct: 1, time: 20 },
+            
+            // 3. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Beta", icon: "planet", style: "rocky", base: "#d1d5db", spot: "#4b5563", q: "Si el radio de un círculo mide 5 cm, ¿cuál es la medida de su diámetro?", options: ["2.5 cm", "5 cm", "10 cm", "20 cm"], correct: 2, time: 20 },
+            // 4. INGLÉS (Planetas)
+            { lang: "en-US", name: "Pluto", icon: "asteroid", style: "rocky", base: "#d6d3d1", spot: "#78716c", q: "What former planet was reclassified as a dwarf planet in 2006?", options: ["Mercury", "Ceres", "Pluto", "Neptune"], correct: 2, time: 20 },
+            
+            // 5. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Gamma", icon: "planet", style: "jupiter", q: "¿Cuál es la fórmula correcta para calcular el perímetro (P) de un círculo si conocemos su diámetro (D)?", options: ["P = π × R", "P = π × D", "P = 2 × π × D", "P = π × D²"], correct: 1, time: 20 },
+            // 6. INGLÉS (Planetas)
+            { lang: "en-US", name: "Earth", icon: "planet", style: "earth", q: "What is the 3rd planet from the sun?", options: ["Mercury", "Earth", "Venus", "Mars"], correct: 1, time: 15 },
+            
+            // 7. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Delta", icon: "planet", style: "earth", q: "¿Qué nombre recibe la línea curva cerrada que limita al círculo?", options: ["Círculo", "Circunferencia", "Arco", "Radio"], correct: 1, time: 15 },
+            // 8. INGLÉS (Planetas)
+            { lang: "en-US", name: "Earth's Rotation", icon: "planet", style: "earth", q: "How long does it take for Earth to spin upon its axis?", options: ["1 day", "1 week", "1 month", "1 year"], correct: 0, time: 20 },
+            
+            // 9. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Épsilon", icon: "moon", style: "rocky", base: "#e5e7eb", spot: "#6b7280", q: "Calcula el perímetro de un círculo cuyo radio es 3 m (Usa π ≈ 3.14).", options: ["9.42 m", "18.84 m", "28.26 m", "14.13 m"], correct: 1, time: 30 },
+            // 10. INGLÉS (Planetas)
+            { lang: "en-US", name: "Earth's Orbit", icon: "planet", style: "earth", q: "How long does it take for Earth to orbit the sun?", options: ["1 day", "1 week", "1 month", "1 year"], correct: 3, time: 20 },
+            
+            // 11. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Zeta", icon: "planet", style: "mars", q: "¿Qué es una 'cuerda' en un círculo?", options: ["Línea curva exterior", "Distancia del centro al borde", "Segmento que une dos puntos", "El doble del radio"], correct: 2, time: 20 },
+            // 12. INGLÉS (Planetas)
+            { lang: "en-US", name: "The Sun", icon: "star", style: "sun", q: "True or False: The sun is a planet.", options: ["True", "False"], correct: 1, time: 15 },
+            
+            // 13. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Eta", icon: "asteroid", style: "asteroid", q: "Si el perímetro de un círculo es 31.4 cm, ¿cuál es su diámetro aproximado? (Considera π = 3.14)", options: ["5 cm", "10 cm", "15 cm", "31.4 cm"], correct: 1, time: 30 },
+            // 14. INGLÉS (Planetas)
+            { lang: "en-US", name: "Red Planet", icon: "planet", style: "mars", q: "What planet is called 'the red planet'?", options: ["Venus", "Mars", "Jupiter", "Saturn"], correct: 1, time: 15 },
+            
+            // 15. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Theta", icon: "moon", style: "rocky", base: "#fbbf24", spot: "#78350f", q: "¿Cómo se llama la parte de la circunferencia comprendida entre dos de sus puntos?", options: ["Radio", "Diámetro", "Cuerda", "Arco"], correct: 3, time: 15 },
+            // 16. INGLÉS (Planetas)
+            { lang: "en-US", name: "Mars Exploration", icon: "planet", style: "mars", q: "Have humans ever walked on Mars?", options: ["Yes", "No"], correct: 1, time: 15 },
+            
+            // 17. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Iota", icon: "moon", style: "rocky", base: "#f1f5f9", spot: "#94a3b8", q: "Si duplicamos el radio de un círculo, ¿qué sucede con su perímetro?", options: ["Se mantiene igual", "Se reduce a la mitad", "Se duplica", "Se cuadruplica"], correct: 2, time: 20 },
+            // 18. INGLÉS (Planetas)
+            { lang: "en-US", name: "Jupiter", icon: "planet", style: "jupiter", q: "What is the largest planet in the Solar System?", options: ["Saturn", "Jupiter", "Uranus", "Neptune"], correct: 1, time: 15 },
+            
+            // 19. ESPAÑOL (Geometría)
+            { lang: "es-MX", name: "Sector Kappa", icon: "planet", style: "saturn", q: "¿Cuál es el valor aproximado más común de la constante Pi (π)?", options: ["3.14", "3.41", "3.12", "3.16"], correct: 0, time: 15 },
+            // 20. INGLÉS (Planetas)
+            { lang: "en-US", name: "Mercury", icon: "planet", style: "rocky", base: "#8c8c8c", spot: "#595959", q: "What is the smallest planet in the Solar System?", options: ["Jupiter", "Venus", "Mars", "Mercury"], correct: 3, time: 20 }
+        ];
+
+        let auth, db, appId, currentUser, isHost = false, currentPin = null, myScore = 0, localPlayerName = "";
+        let connectedPlayersCount = 0;
+
+        async function initFirebase() {
+            try {
+                // 🚀 FORZAR TU ENTORNO DE FIREBASE (Ignorar cualquier otra configuración) 🚀
+                const configPersonalizada = {
+                    apiKey: "AIzaSyCJG664bcIH5VqLfLtpN5iVFZ523yXhqS0",
+                    authDomain: "leed-53a22.firebaseapp.com",
+                    projectId: "leed-53a22",
+                    storageBucket: "leed-53a22.firebasestorage.app",
+                    messagingSenderId: "928874209533",
+                    appId: "1:928874209533:web:17b388197c71dbc6725e94",
+                    measurementId: "G-W9CJ2WY0QM"
+                };
+                
+                const app = initializeApp(configPersonalizada);
+                auth = getAuth(app); 
+                db = getFirestore(app);
+                appId = configPersonalizada.projectId; 
+                
+                // Iniciar sesión anónima automáticamente
+                await signInAnonymously(auth);
+                
+                const networkEl = document.getElementById('network-id-display');
+                if (networkEl) networkEl.innerText = appId.substring(0, 8);
+                
+                onAuthStateChanged(auth, user => { 
+                    currentUser = user; 
+                    if(user) showView('view-login'); 
+                });
+            } catch(e) { 
+                console.error("Error inicializando Firebase:", e); 
+                document.getElementById('loading-icon').classList.add('hidden');
+                document.querySelector('#view-loading h1').innerHTML = `
+                    <span class="text-red-500">⚠️ Error de Autenticación</span><br>
+                    <span class='text-sm text-cyan-200 mt-4 block leading-normal'>
+                        Asegúrate de haber activado "Anónimo" en Firebase Console > Authentication > Sign-in method.<br><br>
+                        Detalle: ${e.message}
+                    </span>
+                `;
+            }
+        }
+
+        window.showAdminSetup = () => { unlockAudio(); createGame(); };
+        window.showPlayerSetup = () => {
+            unlockAudio();
+            document.getElementById('role-selection').classList.add('hidden');
+            document.getElementById('player-setup').classList.remove('hidden');
+            document.getElementById('player-setup').classList.add('flex');
+        };
+        window.resetLogin = () => {
+            document.getElementById('player-setup').classList.add('hidden');
+            document.getElementById('role-selection').classList.remove('hidden');
+            document.getElementById('login-error').classList.add('hidden');
+        };
+
+        // --- SISTEMA DE SIMULACIÓN DE JUGADORES (BOTS) ---
+        window.addTestBot = async () => {
+            const botNames = ["AstroBot", "HAL-9000", "R2-D2", "WALL-E", "TARS", "Nexus", "Eve"];
+            const botName = botNames[Math.floor(Math.random() * botNames.length)] + "_" + Math.floor(Math.random()*99);
+            const botUid = "bot_" + Math.random().toString(36).substr(2, 9);
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`, botUid), { 
+                name: botName, score: 0, answered: false, isBot: true 
+            });
+        };
+
+        async function triggerBotsAnswer(syncStartTime) {
+            if (!isHost) return;
+            const q = questions[currentQuestionIndex];
+            const playersSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`));
+            
+            playersSnap.docs.forEach(d => {
+                const p = d.data();
+                if (p.isBot && !p.answered) {
+                    const randomDelay = Math.random() * (q.time * 1000 - 2000) + 1000;
+                    setTimeout(async () => {
+                        if (lastKnownStatus !== 'question') return;
+                        const isCorrect = Math.random() > 0.4; // 60% probabilidad de acierto del bot
+                        let newScore = p.score;
+                        if (isCorrect) {
+                            const elapsed = Math.floor((Date.now() - syncStartTime) / 1000);
+                            const timeLeft = Math.max(0, q.time - elapsed);
+                            newScore += Math.round(((timeLeft / q.time) * 500) + 500);
+                        }
+                        await updateDoc(d.ref, { score: newScore, answered: true });
+                    }, randomDelay);
+                }
+            });
+        }
+
+        async function createGame() {
+            unlockAudio();
+            if (!currentUser) {
+                document.getElementById('loading-icon').classList.add('hidden');
+                document.querySelector('#view-loading h1').innerHTML = `<span class="text-red-500">Error de Autenticación. Por favor refresca la página.</span>`;
+                showView('view-loading');
+                return;
+            }
+            try {
+                isHost = true; currentPin = Math.floor(1000 + Math.random() * 9000).toString();
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentPin), { status: 'lobby', questionIndex: 0, startTime: 0, hostUid: currentUser.uid });
+                enterLobbyUI(); listenToGame(); listenToPlayers();
+            } catch (error) {
+                console.error("Error al crear partida:", error);
+                document.getElementById('loading-icon').classList.add('hidden');
+                document.querySelector('#view-loading h1').innerHTML = `
+                    <span class="text-red-500 text-xl">⚠️ Error de Permisos en Firestore</span><br>
+                    <span class='text-sm text-cyan-200 mt-4 block leading-normal'>
+                        Debes ir a la consola de Firebase > Firestore Database > Reglas (Rules) y poner "allow read, write: if true;".<br>
+                        ${error.message}
+                    </span>`;
+                showView('view-loading');
+            }
+        }
+
+        window.joinGame = async () => {
+            unlockAudio(); 
+            const pin = document.getElementById('pin-input').value.trim();
+            const name = document.getElementById('name-input').value.trim();
+            const errorEl = document.getElementById('login-error');
+
+            errorEl.classList.remove('text-cyan-400');
+            errorEl.classList.add('text-red-400');
+
+            if(!pin || !name) {
+                errorEl.innerText = "Ingresa tu nombre y el PIN de 4 dígitos.";
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            errorEl.innerText = "Conectando a la red estelar...";
+            errorEl.classList.replace('text-red-400', 'text-cyan-400');
+            errorEl.classList.remove('hidden');
+
+            try {
+                const gameDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', pin));
+                if (!gameDoc.exists()) {
+                    errorEl.classList.replace('text-cyan-400', 'text-red-400');
+                    errorEl.innerText = "Frecuencia (PIN) no hallada. Red distinta.";
+                    return;
+                }
+                if (gameDoc.data().status !== 'lobby') {
+                    errorEl.classList.replace('text-cyan-400', 'text-red-400');
+                    errorEl.innerText = "La misión ya despegó. ¡Llegaste tarde!";
+                    return;
+                }
+                
+                isHost = false; currentPin = pin; localPlayerName = name;
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`, currentUser.uid), { name: localPlayerName, score: 0, answered: false, isBot: false });
+                
+                errorEl.classList.add('hidden');
+                enterLobbyUI(); listenToGame(); listenToPlayers();
+            } catch (error) {
+                console.error("Error al unirse:", error);
+                errorEl.classList.replace('text-cyan-400', 'text-red-400');
+                if (error.code === 'permission-denied') {
+                    errorEl.innerText = "Faltan permisos. Actualiza las reglas de Firestore.";
+                } else {
+                    errorEl.innerText = "Frecuencia (PIN) no hallada. Red distinta.";
+                }
+            }
+        };
+
+        function enterLobbyUI() {
+            document.getElementById('lobby-pin-display').innerText = currentPin;
+            if(isHost) document.getElementById('host-controls').classList.remove('hidden');
+            else document.getElementById('player-waiting').classList.remove('hidden');
+            showView('view-lobby');
+        }
+
+        let currentQuestionIndex = 0, lastKnownStatus = 'lobby';
+
+        function listenToGame() {
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentPin), (snap) => {
+                if (!snap.exists()) return;
+                const data = snap.data();
+                if (data.status === 'travel' && lastKnownStatus !== 'travel') {
+                    lastKnownStatus = 'travel'; currentQuestionIndex = data.questionIndex;
+                    const q = questions[currentQuestionIndex];
+                    
+                    // Adaptar la lectura de las opciones dinámicamente
+                    const optionsText = q.options.map((opt, idx) => `${String.fromCharCode(65 + idx)}: ${opt}`).join(". ");
+                    const audioText = `${q.q}. ${optionsText}.`;
+                    
+                    window.preloadedAudioPromise = preloadSpeak(audioText);
+                    triggerWarpAnimation(q);
+                    if (isHost) {
+                        Promise.all([window.preloadedAudioPromise, new Promise(r => setTimeout(r, 3000))]).then(() => {
+                            updateDoc(snap.ref, { status: 'question', startTime: Date.now() + 1000 });
+                        });
+                    }
+                } 
+                else if (data.status === 'question' && lastKnownStatus !== 'question') {
+                    lastKnownStatus = 'question'; startQuestionPhase(data.startTime);
+                }
+                else if (data.status === 'feedback' && lastKnownStatus !== 'feedback') {
+                    lastKnownStatus = 'feedback'; showFeedbackPhase();
+                }
+                else if (data.status === 'podium' && lastKnownStatus !== 'podium') {
+                    lastKnownStatus = 'podium'; showPodiumPhase();
+                }
+            }, (error) => {
+                console.error("Game listener error:", error);
+            });
+        }
+
+        function listenToPlayers() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`), (snap) => {
+                const listLobby = document.getElementById('lobby-players');
+                const listHostQ = document.getElementById('host-answered-list');
+                const statAns = document.getElementById('stat-answered');
+                const statMiss = document.getElementById('stat-missing');
+
+                if (listLobby) listLobby.innerHTML = '';
+                if (listHostQ) listHostQ.innerHTML = '';
+                
+                connectedPlayersCount = snap.docs.length;
+                if (document.getElementById('lobby-count')) document.getElementById('lobby-count').innerText = connectedPlayersCount;
+                
+                let countAnswered = 0, allAnswered = true;
+                
+                snap.docs.forEach(d => {
+                    const p = d.data();
+                    if (p.answered) countAnswered++;
+                    else allAnswered = false;
+
+                    if (listLobby) {
+                        const color = d.id === currentUser.uid ? 'bg-cyan-600 border-cyan-300' : 'bg-purple-900/50 border-purple-500/50';
+                        const icon = p.isBot ? '🤖' : '👤';
+                        listLobby.innerHTML += `<span class="border text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 ${color}">${icon} ${p.name}</span>`;
+                    }
+
+                    if (listHostQ && isHost) {
+                        const statusColor = p.answered ? 'border-green-500/50 bg-green-900/30 text-green-200' : 'border-yellow-500/50 bg-yellow-900/30 text-yellow-200';
+                        const checkIcon = p.answered ? `<span class="w-3 h-3">${svgIcons.check}</span>` : `<span class="w-3 h-3 animate-spin">${svgIcons.radar}</span>`;
+                        listHostQ.innerHTML += `<div class="border text-[10px] md:text-xs px-3 py-2 rounded-lg flex justify-between items-center ${statusColor}"><span>${p.name}</span> <span>${checkIcon}</span></div>`;
+                    }
+                });
+
+                if (statAns) statAns.innerText = countAnswered;
+                if (statMiss) statMiss.innerText = Math.max(0, connectedPlayersCount - countAnswered);
+
+                if (isHost && lastKnownStatus === 'question' && connectedPlayersCount > 0 && allAnswered) hostForceEndQuestion();
+            }, (error) => {
+                console.error("Players listener error:", error);
+            });
+        }
+
+        window.hostStartGame = () => {
+            unlockAudio();
+            updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentPin), { status: 'travel', questionIndex: 0 });
+        };
+        
+        window.hostForceEndQuestion = () => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentPin), { status: 'feedback' });
+        window.hostNextAction = async () => {
+            unlockAudio();
+            const players = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`));
+            for(let d of players.docs) await updateDoc(d.ref, { answered: false });
+            if (currentQuestionIndex + 1 < questions.length) updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentPin), { status: 'travel', questionIndex: currentQuestionIndex + 1 });
+            else updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'games', currentPin), { status: 'podium' });
+        };
+
+        let timerInterval, questionTimeLeft = 0, localHasAnswered = false, lastPointsEarned = 0, lastWasCorrect = false;
+
+        function triggerWarpAnimation(q) {
+            document.getElementById('travel-target-name').innerHTML = `${q.name} <span class="w-8 h-8 inline-block align-middle ml-2">${svgIcons[q.icon]}</span>`;
+            showView('view-travel'); triggerCanvasWarp(q);
+        }
+
+        async function startQuestionPhase(syncStartTime) {
+            canvasState = 'IDLE'; 
+            localHasAnswered = false; lastPointsEarned = 0;
+            const q = questions[currentQuestionIndex];
+            document.getElementById('q-number').innerText = `${currentQuestionIndex + 1} / ${questions.length}`;
+            document.getElementById('current-location').innerHTML = `${q.name} <span class="w-4 h-4 inline-block align-middle ml-1">${svgIcons[q.icon]}</span>`;
+            document.getElementById('question-text').innerText = q.q;
+            
+            // Mostrar y ocultar botones dinámicamente según la cantidad de opciones (ej: True/False)
+            for(let i=0; i<4; i++) {
+                const btn = document.getElementById(`btn-ans-${i}`);
+                if (i < q.options.length) {
+                    btn.classList.remove('hidden');
+                    btn.classList.add('flex');
+                    btn.disabled = isHost;
+                    document.getElementById(`ans-${i}`).innerText = q.options[i];
+                } else {
+                    btn.classList.add('hidden');
+                    btn.classList.remove('flex');
+                }
+            }
+            
+            document.getElementById('wait-overlay').classList.add('hidden');
+            const sidebar = document.getElementById('host-q-sidebar');
+            if (isHost) { 
+                sidebar.classList.remove('hidden'); sidebar.classList.add('flex'); 
+                setTimeout(() => triggerBotsAnswer(syncStartTime), 1000); // Disparar la IA de los bots
+            }
+            else { sidebar.classList.add('hidden'); }
+
+            showView('view-question');
+            
+            stopReading(); // Detiene cualquier audio anterior
+
+            if (window.preloadedAudioPromise) {
+                window.preloadedAudioPromise.then(audioObj => {
+                    if (audioObj) { 
+                        if (audioObj.url) {
+                            globalAudio.src = audioObj.url;
+                            globalAudio.play().catch(e => console.warn("Bloqueo Autoplay:", e)); 
+                        } else {
+                            // Activa la voz nativa con el idioma correcto (Inglés o Español)
+                            const utterance = new SpeechSynthesisUtterance(audioObj.text);
+                            utterance.lang = q.lang || 'es-MX'; 
+                            window.speechSynthesis.speak(utterance);
+                        }
+                    }
+                });
+                window.preloadedAudioPromise = null;
+            }
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - syncStartTime) / 1000);
+                questionTimeLeft = Math.max(0, q.time - elapsed);
+                document.getElementById('timer-display').innerText = questionTimeLeft;
+                document.getElementById('timer-circle').style.strokeDashoffset = 100 - (100 * (questionTimeLeft / q.time));
+                
+                if (questionTimeLeft <= 5) {
+                    document.getElementById('timer-circle').style.stroke = '#ff0055';
+                    document.getElementById('red-alert-overlay').classList.remove('hidden');
+                    document.getElementById('red-alert-overlay').classList.add('alert-mode');
+                    if (questionTimeLeft > 0 && !localHasAnswered && !isHost) playAlertBeep();
+                } else {
+                    document.getElementById('timer-circle').style.stroke = '#0ff';
+                    document.getElementById('red-alert-overlay').classList.add('hidden');
+                }
+
+                if (questionTimeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    document.getElementById('red-alert-overlay').classList.add('hidden');
+                    if (isHost) hostForceEndQuestion();
+                    else if (!localHasAnswered) window.submitAnswer(-1); 
+                }
+            }, 1000);
+        }
+
+        window.submitAnswer = async (selectedIndex) => {
+            if (isHost || localHasAnswered) return;
+            localHasAnswered = true;
+            document.getElementById('wait-overlay').classList.remove('hidden');
+            document.getElementById('wait-overlay').classList.add('flex');
+            const q = questions[currentQuestionIndex];
+            lastWasCorrect = selectedIndex === q.correct;
+            if (lastWasCorrect) {
+                lastPointsEarned = Math.round(((questionTimeLeft / q.time) * 500) + 500);
+                myScore += lastPointsEarned;
+            }
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`, currentUser.uid), { score: myScore, answered: true });
+        };
+
+        function showFeedbackPhase() {
+            clearInterval(timerInterval);
+            stopReading(); // Silenciar al mostrar resultados
+            const q = questions[currentQuestionIndex];
+            const panel = document.getElementById('feedback-panel'), title = document.getElementById('feedback-title');
+            panel.className = "glass-panel w-full p-6 md:p-10 flex flex-col justify-center items-center min-h-0 view-active";
+            
+            if (isHost) {
+                document.getElementById('feedback-player').classList.add('hidden');
+                document.getElementById('feedback-host').classList.remove('hidden');
+                document.getElementById('feedback-host').classList.add('flex');
+                title.innerText = "ESCANEO COMPLETADO";
+                panel.classList.add('border-cyan-400');
+                document.getElementById('host-correct-ans-display').innerText = q.options[q.correct];
+                const btn = document.getElementById('btn-next-host');
+                btn.innerHTML = currentQuestionIndex + 1 < questions.length ? `PRÓXIMO OBJETIVO <span class="w-5 h-5 ml-2">${svgIcons.rocket}</span>` : `VER RESULTADOS <span class="w-5 h-5 ml-2">${svgIcons.crown}</span>`;
+            } else {
+                document.getElementById('feedback-player').classList.remove('hidden');
+                document.getElementById('feedback-host').classList.add('hidden');
+                document.getElementById('correct-ans-display').innerText = q.options[q.correct];
+                document.getElementById('feedback-points').innerText = `+${lastPointsEarned}`;
+                document.getElementById('total-score-display').innerText = myScore;
+                document.getElementById('feedback-icon').innerHTML = lastWasCorrect ? `<span class="text-cyan-400 w-full h-full">${svgIcons.check}</span>` : `<span class="text-red-400 w-full h-full">${svgIcons.alert}</span>`;
+                title.innerText = lastWasCorrect ? "¡SISTEMAS ÓPTIMOS!" : "FALLA EN ESCANEO";
+                title.className = `hud-text mb-2 tracking-wider text-2xl md:text-4xl leading-none ${lastWasCorrect ? 'text-cyan-300' : 'text-red-400'}`;
+            }
+            showView('view-feedback');
+        }
+
+        async function showPodiumPhase() {
+            showView('view-podium');
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', `lobby_${currentPin}_players`));
+            let players = snap.docs.map(d => d.data()).sort((a, b) => b.score - a.score);
+            const p1 = players[0] || {name: "---", score: 0}, p2 = players[1] || {name: "---", score: 0}, p3 = players[2] || {name: "---", score: 0};
+            document.getElementById('podium-container').innerHTML = `
+                <div class="w-1/3 flex flex-col items-center h-[60%] animate-[slideUp_1s]"><div class="truncate w-full text-center text-gray-300 text-sm md:text-base">${p2.name}</div><div class="mb-1 text-cyan-400 font-bold text-xs md:text-sm">${p2.score}</div><div class="w-full bg-cyan-900/50 rounded-t-xl border-t border-cyan-400/50 flex justify-center pt-2 shadow-inner"><span class="hud-text text-2xl">II</span></div></div>
+                <div class="w-1/3 flex flex-col items-center h-[85%] animate-[slideUp_1.5s]"><div class="w-8 h-8 md:w-10 md:h-10 mb-2">${svgIcons.crown}</div><div class="truncate w-full text-center text-yellow-300 font-bold text-lg md:text-2xl">${p1.name}</div><div class="mb-1 text-yellow-400 font-bold text-xs md:text-sm">${p1.score}</div><div class="w-full bg-yellow-900/50 rounded-t-xl border-t border-yellow-400/50 flex justify-center pt-2 shadow-inner"><span class="hud-text text-3xl md:text-4xl">I</span></div></div>
+                <div class="w-1/3 flex flex-col items-center h-[45%] animate-[slideUp_0.5s]"><div class="truncate w-full text-center text-gray-300 text-sm md:text-base">${p3.name}</div><div class="mb-1 text-purple-400 font-bold text-xs md:text-sm">${p3.score}</div><div class="w-full bg-purple-900/50 rounded-t-xl border-t border-purple-400/50 flex justify-center pt-2 shadow-inner"><span class="hud-text text-2xl">III</span></div></div>`;
+            document.getElementById('full-ranking-list').innerHTML = players.map((p, i) => `<div class="flex justify-between items-center border-b border-white/10 pb-2"><span class="text-sm md:text-base">${i+1}. ${p.name}</span><span class="text-cyan-500 font-bold text-xs md:text-sm">${p.score} CR</span></div>`).join('');
+        }
+
+        // --- EFECTO DE VIAJE: NAVEGACIÓN 3D PROFUNDA (ESTILO UNIVERSO ELEGANTE) ---
+        const canvas = document.getElementById('starfield'), ctx = canvas.getContext('2d');
+        let width, height, stars = [], nebulas = [], canvasState = 'IDLE', warpProgress = 0, cameraAngle = 0;
+        
+        const starColors = ['#ffffff', '#cffafe', '#a5f3fc', '#e0e7ff', '#c084fc', '#fdf4ff', '#fef08a'];
+
+        function resizeCanvas() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+        
+        // Generar campo de estrellas tridimensional
+        for(let i=0; i<800; i++) {
+            stars.push({
+                x: (Math.random() - 0.5) * 4000, 
+                y: (Math.random() - 0.5) * 4000, 
+                z: Math.random() * 2000 + 1, 
+                r: Math.random() * 1.5 + 0.5,
+                c: starColors[Math.floor(Math.random() * starColors.length)]
+            });
+        }
+
+        // Generar nubes de nebulosa cósmica
+        for(let i=0; i<12; i++) {
+            nebulas.push({
+                x: (Math.random() - 0.5) * 3000,
+                y: (Math.random() - 0.5) * 3000,
+                z: Math.random() * 2000 + 1,
+                r: Math.random() * 600 + 300,
+                color: Math.random() > 0.5 ? '6, 182, 212' : '168, 85, 247' 
+            });
+        }
+
+        function drawSpace() {
+            ctx.fillStyle = '#02040a';
+            ctx.fillRect(0, 0, width, height);
+            
+            const cx = width / 2, cy = height / 2, fov = width * 0.8;
+            
+            let speed = canvasState === 'WARP' ? 20 : 0.6;
+            if (canvasState === 'ORBIT') speed = 0.2;
+            
+            // Rotación cinematográfica de la cámara
+            cameraAngle += canvasState === 'WARP' ? 0.002 : 0.0005;
+            const cosA = Math.cos(cameraAngle), sinA = Math.sin(cameraAngle);
+
+            ctx.globalCompositeOperation = 'screen';
+            nebulas.forEach(el => {
+                el.z -= speed * 0.5;
+                if(el.z <= 1) { el.x = (Math.random() - 0.5) * 4000; el.y = (Math.random() - 0.5) * 4000; el.z = 2000; }
+
+                const rx = el.x * cosA - el.y * sinA, ry = el.x * sinA + el.y * cosA;
+                const px = (rx / el.z) * fov + cx, py = (ry / el.z) * fov + cy, radius = (el.r * fov) / el.z;
+
+                if(px >= -radius && px <= width + radius && py >= -radius && py <= height + radius) {
+                    let alpha = Math.min(1, (2000 - el.z) / 800);
+                    if (el.z < 200) alpha *= (el.z / 200); 
+                    
+                    const gradient = ctx.createRadialGradient(px, py, 0, px, py, Math.max(1, radius));
+                    gradient.addColorStop(0, `rgba(${el.color}, ${alpha * 0.15})`);
+                    gradient.addColorStop(1, `rgba(${el.color}, 0)`);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(px - radius, py - radius, radius * 2, radius * 2);
+                }
+            });
+
+            ctx.globalCompositeOperation = 'source-over';
+            stars.forEach(el => {
+                el.z -= speed;
+                if(el.z <= 1) { el.x = (Math.random() - 0.5) * 4000; el.y = (Math.random() - 0.5) * 4000; el.z = 2000; }
+
+                const rx = el.x * cosA - el.y * sinA, ry = el.x * sinA + el.y * cosA;
+                const px = (rx / el.z) * fov + cx, py = (ry / el.z) * fov + cy, radius = Math.max(0.1, (el.r * fov) / el.z);
+
+                if(px >= -radius && px <= width + radius && py >= -radius && py <= height + radius) {
+                    ctx.beginPath();
+                    ctx.arc(px, py, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = el.c;
+                    
+                    let alpha = Math.min(1, (2000 - el.z) / 500);
+                    if (el.z < 100) alpha *= (el.z / 100); 
+                    
+                    ctx.globalAlpha = alpha;
+                    ctx.fill();
+                }
+            });
+
+            ctx.globalAlpha = 1.0;
+
+            if (canvasState === 'ORBIT' && window.orbitStartTime) {
+                const orbitElapsed = (Date.now() - window.orbitStartTime) / 1000;
+                if (orbitElapsed < 2) {
+                    const flashOpacity = (1 - (orbitElapsed / 2)) * 0.2;
+                    ctx.fillStyle = `rgba(165, 243, 252, ${flashOpacity})`;
+                    ctx.fillRect(0, 0, width, height);
+                }
+            }
+            requestAnimationFrame(drawSpace);
+        }
+        drawSpace();
+
+        function triggerCanvasWarp(qObj) {
+            canvasState = 'WARP'; 
+            let start = Date.now();
+            
+            const h1 = document.querySelector('#view-travel h1');
+            h1.className = "hud-text tracking-wider text-2xl md:text-4xl lg:text-5xl leading-none text-cyan-300 animate-pulse drop-shadow-[0_0_15px_rgba(0,255,255,0.8)] uppercase transition-all duration-500 relative z-10";
+            h1.innerText = "NAVEGACIÓN ESTELAR";
+            
+            const pSubtitle = document.querySelector('#view-travel p');
+            pSubtitle.className = "text-purple-400 uppercase tracking-[0.3em] text-[10px] md:text-xs mb-3 transition-all duration-500";
+            pSubtitle.innerText = "Calculando ruta hacia:";
+            
+            const targetName = document.getElementById('travel-target-name');
+            targetName.innerHTML = `${qObj.name} <span class="w-8 h-8 inline-block align-middle ml-2 text-cyan-400 animate-spin">${svgIcons.radar}</span>`;
+            
+            startWarpSound(); 
+            
+            function anim() { 
+                let warpProgress = (Date.now() - start) / 3500; 
+                
+                if (warpProgress < 1 && canvasState === 'WARP') { 
+                    requestAnimationFrame(anim); 
+                } 
+                else if(warpProgress >= 1 && canvasState === 'WARP') {
+                    stopWarpSound();
+                    canvasState = 'ORBIT';
+                    window.orbitStartTime = Date.now();
+                    
+                    h1.innerText = "ÓRBITA ALCANZADA";
+                    h1.className = "hud-text tracking-wider text-2xl md:text-4xl lg:text-5xl leading-none text-green-400 drop-shadow-[0_0_15px_rgba(34,197,94,0.8)] uppercase transition-all duration-500 relative z-10";
+                    
+                    pSubtitle.className = "text-green-300 uppercase tracking-[0.3em] text-[10px] md:text-xs mb-3 transition-all duration-500";
+                    pSubtitle.innerText = "Sistemas en línea:";
+                    
+                    targetName.innerHTML = `Enlace Establecido <span class="w-8 h-8 inline-block align-middle ml-2 text-green-400">${svgIcons.check}</span>`;
+                } 
+            } 
+            anim();
+        }
+
+        function hideAllViews() { document.querySelectorAll('body > div.absolute > div').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex', 'view-active'); }); }
+        function showView(id) { hideAllViews(); const v = document.getElementById(id); if(v) { v.classList.remove('hidden'); v.classList.add('flex', 'view-active'); } }
+        window.onload = () => { initFirebase(); };
+    </script>
+</body>
+</html>
