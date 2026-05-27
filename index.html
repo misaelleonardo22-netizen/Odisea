@@ -188,13 +188,26 @@
             </div>
         </div>
 
+        <!-- VISTA 0.5: INTRO -->
+        <div id="view-intro" class="hidden flex-col items-center justify-center w-full max-w-md h-full min-h-0 relative p-4">
+            <div class="glass-panel p-6 md:p-8 w-full text-center flex flex-col justify-center items-center">
+                <img src="https://lh3.googleusercontent.com/d/1NiYV1pH8uL6TCoEsvuYCAw0cbbDs_Xbw" alt="Odisea Cósmica Inicio" class="h-[25vh] min-h-[150px] max-h-[250px] w-auto object-contain mx-auto mb-8 drop-shadow-[0_0_25px_rgba(0,255,255,0.7)] animate-[pulse-glow_3s_infinite]">
+                <button onclick="startApp()" class="btn-launch w-full font-bold py-4 rounded-lg text-lg md:text-xl text-cyan-100 uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(0,255,255,0.3)]">
+                    Comenzar <span id="icon-start-btn" class="w-6 h-6"></span>
+                </button>
+            </div>
+        </div>
+
         <!-- VISTA 1: LOGIN -->
-        <div id="view-login" class="hidden flex flex-col items-center justify-center w-full max-w-md h-full min-h-0 relative">
-            <div class="glass-panel p-6 md:p-8 w-full text-center flex flex-col justify-center">
-                <h1 class="font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-2 animate-hud tracking-widest uppercase text-4xl md:text-6xl leading-none">Odisea</h1>
-                <h2 class="text-cyan-200 mb-8 tracking-[0.3em] text-xl md:text-2xl leading-none">Cósmica</h2>
+        <div id="view-login" class="hidden flex flex-col items-center justify-center w-full max-w-md h-full min-h-0 relative p-4">
+            <div class="glass-panel p-6 md:p-8 w-full text-center flex flex-col justify-center max-h-full overflow-y-auto custom-scrollbar">
+                <!-- IMAGEN PRINCIPAL (85) -->
+                <img src="https://lh3.googleusercontent.com/d/1FJXMFUc6tiJ_8O-s7bRQPefqfouoYSMd" alt="Misión Odisea" class="h-[18vh] min-h-[80px] max-h-[160px] w-auto object-contain mx-auto mb-4 shrink-0 drop-shadow-[0_0_20px_rgba(0,255,255,0.6)] animate-[pulse-glow_4s_infinite]">
+
+                <h1 class="font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-1 animate-hud tracking-widest uppercase text-3xl md:text-5xl leading-none shrink-0">Odisea</h1>
+                <h2 class="text-cyan-200 mb-6 tracking-[0.3em] text-lg md:text-xl leading-none shrink-0">Cósmica</h2>
                 
-                <div id="role-selection" class="flex flex-col gap-4">
+                <div id="role-selection" class="flex flex-col gap-4 shrink-0">
                     <button onclick="showAdminSetup()" class="btn-launch btn-host font-bold py-4 rounded-lg text-sm md:text-base flex items-center justify-center gap-2">
                         <span id="icon-crown-btn" class="w-5 h-5"></span> Crear Misión (Comandante)
                     </button>
@@ -217,9 +230,6 @@
                     <p id="login-error" class="text-red-400 text-xs font-bold hidden">Acceso Denegado.</p>
                 </div>
             </div>
-            <p class="absolute bottom-4 left-0 right-0 text-center text-[10px] text-gray-500 uppercase tracking-widest">
-                ID de Red: <span id="network-id-display" class="text-cyan-500">...</span>
-            </p>
         </div>
 
         <!-- VISTA 2: LOBBY -->
@@ -267,6 +277,9 @@
                 
                 <div class="w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent my-5 opacity-70 relative z-10"></div>
                 
+                <!-- IMAGEN INTERCALADA DE VIAJE -->
+                <img id="travel-image" src="" alt="Transmisión Visual" class="relative z-10 h-[15vh] min-h-[80px] max-h-[150px] w-auto object-contain mx-auto mb-4 shrink-0 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] hidden">
+
                 <div class="relative z-10 flex flex-col items-center justify-center min-h-[80px]">
                     <p class="text-purple-400 uppercase tracking-[0.3em] text-[10px] md:text-xs mb-3 transition-all duration-500">Aproximación a coordenadas:</p>
                     <p id="travel-target-name" class="text-white font-bold uppercase tracking-widest text-2xl md:text-4xl drop-shadow-[0_0_20px_rgba(255,255,255,0.8)] leading-tight flex items-center justify-center gap-3 transition-all duration-500"></p>
@@ -461,6 +474,7 @@
         document.getElementById('icon-radar-waiting').innerHTML = svgIcons.radar;
         document.getElementById('icon-check-overlay').innerHTML = svgIcons.check;
         document.getElementById('icon-sidebar-radar').innerHTML = svgIcons.radar;
+        document.getElementById('icon-start-btn').innerHTML = svgIcons.rocket;
 
         // --- UNIFIED AUDIO SYSTEM ---
         let audioCtx;
@@ -688,6 +702,13 @@
         let auth, db, appId, currentUser, isHost = false, currentPin = null, myScore = 0, localPlayerName = "";
         let connectedPlayersCount = 0;
 
+        // Imágenes de viaje (Intercaladas)
+        const travelImages = [
+            "https://lh3.googleusercontent.com/d/1PLjUTsIWbj5bKxwfqdAGIWE2mBsCaHUG",
+            "https://lh3.googleusercontent.com/d/1hJrle5gF5piIUhWo-y0BCROSNkzt30MW",
+            "https://lh3.googleusercontent.com/d/1i7WPxUkBWWIY81CLLpj5xfPCwK6DaHfo"
+        ];
+
         async function initFirebase() {
             try {
                 // Configuración personalizada provista en el código original
@@ -716,12 +737,9 @@
                     await signInAnonymously(auth);
                 }
                 
-                const networkEl = document.getElementById('network-id-display');
-                if (networkEl) networkEl.innerText = appId.substring(0, 8);
-                
                 onAuthStateChanged(auth, user => { 
                     currentUser = user; 
-                    if(user) showView('view-login'); 
+                    if(user) showView('view-intro'); 
                 });
             } catch(e) { 
                 console.error("Error inicializando Firebase:", e); 
@@ -735,6 +753,11 @@
                 `;
             }
         }
+
+        window.startApp = () => {
+            unlockAudio();
+            showView('view-login');
+        };
 
         window.showAdminSetup = () => { unlockAudio(); createGame(); };
         window.showPlayerSetup = () => {
@@ -1040,6 +1063,15 @@
 
         function triggerWarpAnimation(q) {
             document.getElementById('travel-target-name').innerHTML = `${q.name} <span class="w-8 h-8 inline-block align-middle ml-2">${svgIcons[q.icon]}</span>`;
+            
+            // Asignar imagen intercalada dinámicamente
+            const travelImgEl = document.getElementById('travel-image');
+            if (travelImgEl) {
+                travelImgEl.src = travelImages[currentQuestionIndex % travelImages.length];
+                travelImgEl.classList.remove('hidden');
+                travelImgEl.classList.add('animate-[fadeInScale_0.5s_ease-out]');
+            }
+
             showView('view-travel'); triggerCanvasWarp(q);
         }
 
